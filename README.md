@@ -20,6 +20,12 @@ Count Elements between 2 keys
   3. Go's Native Map
   4. github.com/egregors/sortedmap
 
+Mass Removal by range
+  1. github.com/akalinux/orderedmap
+  2. Go's Native Map
+  3. github.com/google/btree
+  4. github.com/egregors/sortedmap
+
 Full benchmarks
 ```
 BenchmarkAll/Native_Map_Put:_1000
@@ -104,4 +110,12 @@ BenchmarkAll/sortedmap_Count:_5000
 BenchmarkAll/sortedmap_Count:_5000-32           1000000000               0.0001869 ns/op               0 B/op          0 allocs/op
 BenchmarkAll/btree_Count:_5000
 BenchmarkAll/btree_Count:_5000-32               1000000000               0.0000230 ns/op               0 B/op          0 allocs/op
+    benchmarks_test.go:124: Delete first 999 elements
+BenchmarkAll/Native_Mass_Remove:_5000
+BenchmarkAll/Native_Mass_Remove:_5000-32        1000000000               0.0000964 ns/op               0 B/op          0 allocs/op
+BenchmarkAll/CenterTree_Mass_Remove:_5000
+BenchmarkAll/CenterTree_Mass_Remove:_5000-32    1000000000               0.0000006 ns/op               0 B/op          0 allocs/op
+BenchmarkAll/sortedmap_Mass_Remove:_5000
+BenchmarkAll/sortedmap_Mass_Remove:_5000-32     1000000000               0.07483 ns/op         0 B/op          0 allocs/op
+BenchmarkAll/btree_Count:_5000#01-32            1000000000               0.0001720 ns/op               0 B/op          0 allocs/op
 ```

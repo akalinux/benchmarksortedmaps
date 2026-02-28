@@ -121,5 +121,30 @@ func BenchmarkAll(b *testing.B) {
 			})
 		})
 
+		b.Log("Delete first 999 elements")
+		end = fmt.Sprintf(format, 998)
+
+		b.Run(fmt.Sprintf("Native Mass Remove: %d", size), func(b *testing.B) {
+			for k := range 999 {
+				key := fmt.Sprintf(format, k)
+				delete(m, key)
+			}
+		})
+		b.Run(fmt.Sprintf("CenterTree Mass Remove: %d", size), func(b *testing.B) {
+			ct.RemoveBetween("", end, omap.FIRST_KEY)
+		})
+		b.Run(fmt.Sprintf("sortedmap Mass Remove: %d", size), func(b *testing.B) {
+			for k := range 999 {
+				key := fmt.Sprintf(format, k)
+				so.Delete(key)
+			}
+
+		})
+		b.Run(fmt.Sprintf("btree Count: %d", size), func(b *testing.B) {
+			for k := range 999 {
+				key := fmt.Sprintf(format, k)
+				bt.Delete(KV[any]{key: key, Value: nil})
+			}
+		})
 	}
 }
