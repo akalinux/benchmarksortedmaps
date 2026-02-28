@@ -1,6 +1,6 @@
 # Sorted Map Bencharks
 
-## Rankins so far
+## Rankings so far
 
 Write tests:
   1. github.com/akalinux/orderedmap
