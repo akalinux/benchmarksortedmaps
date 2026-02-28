@@ -17,8 +17,8 @@ Get Single Element Test
 Count Elements between 2 keys
   1. github.com/akalinux/orderedmap
   2. github.com/google/btree
-  3. github.com/egregors/sortedmap
-  4. Go's Native Map
+  3. Go's Native Map
+  4. github.com/egregors/sortedmap
 
 Full benchmarks
 ```
