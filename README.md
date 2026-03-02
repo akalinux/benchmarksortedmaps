@@ -20,7 +20,7 @@ Count Elements between 2 keys
   3. Go's Native Map
   4. github.com/egregors/sortedmap
 
-Mass Remove the first 999 elements
+Mass Key Removal tests
   1. github.com/akalinux/orderedmap
   2. Go's Native Map
   3. github.com/google/btree
