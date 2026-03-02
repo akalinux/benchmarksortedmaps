@@ -22,39 +22,39 @@ func (a KV[any]) Less(than btree.Item) bool {
 
 func BenchmarkAll(b *testing.B) {
 	format := "%04d"
-	for _, size := range []int{50} {
+	for _, size := range []int{1000} {
 		b.Logf("Working with set size: %d", size)
 		var m map[string]any
 		// Write tests
 		b.Log("** Write tests")
-		BuildMap := func() {
+		BuildMap := func(size int) {
 			m = make(map[string]any, size)
 			for k := range size {
 				key := fmt.Sprintf(format, k)
 				m[key] = nil
 			}
 		}
-		b.Run(fmt.Sprintf("Native Map Put: %d", size), func(b *testing.B) {
+		b.Run("Native Map Put", func(b *testing.B) {
 			for range b.N {
-				BuildMap()
+				BuildMap(size)
 			}
 		})
 
 		var ct *omap.CenterTree[string, any]
-		BuildCt := func() {
+		BuildCt := func(size int) {
 			ct = omap.NewCenterTree[string, any](size, cmp.Compare)
 			for k := range size {
 				key := fmt.Sprintf(format, k)
 				ct.Put(key, nil)
 			}
 		}
-		b.Run(fmt.Sprintf("CenterTree Put: %d", size), func(b *testing.B) {
+		b.Run("CenterTree Put", func(b *testing.B) {
 			for range b.N {
-				BuildCt()
+				BuildCt(size)
 			}
 		})
 		var so *sm.SortedMap[map[string]any, string, any]
-		BuildSm := func() {
+		BuildSm := func(size int) {
 
 			so = sm.New[map[string]any](func(i, j sm.KV[string, any]) bool { return cmp.Less(i.Key, j.Key) })
 			for k := range size {
@@ -64,13 +64,12 @@ func BenchmarkAll(b *testing.B) {
 		}
 		b.Run("sortedmap Put", func(b *testing.B) {
 			for range b.N {
-
-				BuildSm()
+				BuildSm(size)
 			}
 		})
 
 		var bt *btree.BTree
-		BuildBt := func() {
+		BuildBt := func(size int) {
 			bt = btree.New(2)
 			for k := range size {
 				key := fmt.Sprintf(format, k)
@@ -79,13 +78,13 @@ func BenchmarkAll(b *testing.B) {
 		}
 		b.Run("btree Put", func(b *testing.B) {
 			for range b.N {
-				BuildBt()
+				BuildBt(size)
 			}
 		})
 
 		// Read tests
-		b.Log("** Read tests")
-		b.Run(fmt.Sprintf("Native Map Get: %d", size), func(b *testing.B) {
+		b.Log("** Single Read tests")
+		b.Run("Native Map Ge", func(b *testing.B) {
 			for range b.N {
 
 				for k := range size {
@@ -94,7 +93,7 @@ func BenchmarkAll(b *testing.B) {
 				}
 			}
 		})
-		b.Run(fmt.Sprintf("CenterTree Get: %d", size), func(b *testing.B) {
+		b.Run("CenterTree Get", func(b *testing.B) {
 			for range b.N {
 				for k := range size {
 					key := fmt.Sprintf(format, k)
@@ -102,7 +101,7 @@ func BenchmarkAll(b *testing.B) {
 				}
 			}
 		})
-		b.Run(fmt.Sprintf("sortedmap Get: %d", size), func(b *testing.B) {
+		b.Run("sortedmap Get", func(b *testing.B) {
 			for range b.N {
 				for k := range size {
 					key := fmt.Sprintf(format, k)
@@ -110,7 +109,7 @@ func BenchmarkAll(b *testing.B) {
 				}
 			}
 		})
-		b.Run(fmt.Sprintf("btree Get: %d", size), func(b *testing.B) {
+		b.Run("btree Get", func(b *testing.B) {
 			for range b.N {
 				for k := range size {
 					key := fmt.Sprintf(format, k)
@@ -119,91 +118,106 @@ func BenchmarkAll(b *testing.B) {
 			}
 		})
 
-		b.Log("Count all values from mid to end")
+		b.Log("Count all values from begin to mid")
 
 		mid := size / 2
 		start := fmt.Sprintf(format, mid)
-		end := fmt.Sprintf(format, size-1)
-		b.Run(fmt.Sprintf("Native Count: %d", size), func(b *testing.B) {
+		end := fmt.Sprintf(format, mid/2)
+		b.Run("Native Count", func(b *testing.B) {
 			for range b.N {
 				count := 0
 				for k := range m {
-					if k >= start {
+					if k >= start && k <= end {
 						count++
 					}
 				}
 			}
 		})
-		b.Run(fmt.Sprintf("CenterTree Count: %d", size), func(b *testing.B) {
+		b.Run("CenterTree Count", func(b *testing.B) {
 			for range b.N {
 				ct.Between(start, end, omap.LAST_KEY)
 			}
 		})
-		b.Run(fmt.Sprintf("sortedmap Count: %d", size), func(b *testing.B) {
+		b.Run("sortedmap Count", func(b *testing.B) {
 			for range b.N {
 				count := 0
 				for k := range so.All() {
-					if k >= start {
+					if k >= start && k <= end {
 						count++
+					} else {
+						break
 					}
 				}
 			}
 
 		})
-		b.Run(fmt.Sprintf("btree Count: %d", size), func(b *testing.B) {
+		b.Run("btree Count", func(b *testing.B) {
 			for range b.N {
 				count := 0
-				start := fmt.Sprintf(format, mid-1)
-				bt.DescendGreaterThan(KV[any]{key: start}, func(item btree.Item) bool {
+				bt.Ascend(func(item btree.Item) bool {
+					kv, _ := item.(KV[any])
 					count++
-					return true
+					return kv.key > end
 				})
 			}
 		})
 
-		b.Log("Delete first 999 elements")
-		end = fmt.Sprintf(format, 998)
+		b.Log("Find and delete first half of all elements")
+		for _, cb := range []func(int){BuildBt, BuildCt, BuildMap, BuildSm} {
+			cb(size)
+		}
 
-		b.Run(fmt.Sprintf("Native Mass Remove: %d", mid), func(b *testing.B) {
+		b.Run("Native Mass Remove", func(b *testing.B) {
 			for range b.N {
-				for k := range mid {
-					key := fmt.Sprintf(format, k)
-					delete(m, key)
+
+				for k := range m {
+					if k <= end {
+						delete(m, k)
+					} else {
+						break
+					}
 				}
+
 				b.StopTimer()
-				BuildMap()
+				BuildMap(size)
 				b.StartTimer()
 			}
 		})
-		b.Run(fmt.Sprintf("CenterTree Mass Remove: %d", mid), func(b *testing.B) {
+		b.Run("CenterTree Mass Remove", func(b *testing.B) {
 			for range b.N {
 				ct.RemoveBetween("", end, omap.FIRST_KEY)
 				b.StopTimer()
-				BuildCt()
+				BuildCt(size)
 				b.StartTimer()
 			}
 		})
-		b.Run(fmt.Sprintf("sortedmap Mass Remove: %d", mid), func(b *testing.B) {
+		b.Run("sortedmap Mass Remove", func(b *testing.B) {
 			for range b.N {
-				for k := range mid {
+				for k := range so.Keys() {
 					key := fmt.Sprintf(format, k)
 					so.Delete(key)
-					b.StopTimer()
-					BuildSm()
-					b.StartTimer()
+					if k > end {
+						break
+					}
 				}
+				b.StopTimer()
+				BuildSm(size)
+				b.StartTimer()
 			}
 		})
-		b.Run(fmt.Sprintf("btree Mass Remove: %d", mid), func(b *testing.B) {
+		b.Run("btree Mass Remove", func(b *testing.B) {
 
 			for range b.N {
-				for k := range mid {
-					key := fmt.Sprintf(format, k)
-					bt.Delete(KV[any]{key: key, Value: nil})
-					b.StopTimer()
-					BuildBt()
-					b.StartTimer()
-				}
+				bt.Ascend(
+					func(item btree.Item) bool {
+						kv, _ := item.(KV[any])
+						bt.Delete(item)
+						return kv.key > end
+					},
+				)
+				b.StopTimer()
+				BuildBt(size)
+				b.StartTimer()
 			}
 		})
 	}
