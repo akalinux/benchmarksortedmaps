@@ -163,9 +163,6 @@ func BenchmarkAll(b *testing.B) {
 		})
 
 		b.Log("Find and delete first half of all elements")
-		for _, cb := range []func(int){BuildBt, BuildCt, BuildMap, BuildSm} {
-			cb(size)
-		}
 
 		b.Run("Native Mass Remove", func(b *testing.B) {
 			for range b.N {
@@ -173,8 +170,6 @@ func BenchmarkAll(b *testing.B) {
 				for k := range m {
 					if k <= end {
 						delete(m, k)
-					} else {
-						break
 					}
 				}
 
